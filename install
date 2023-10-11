@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Check if a directory name is provided as a command-line argument
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <installation_directory>" \[options\]
+    echo Options:
+    echo "    --oss-cad-suite"
+    echo "    --synlig"
+    echo "    --zachjs-sv2v"
+    echo "    --verible"
+    exit 1
+fi
+
+# Store the directory name provided as an argument
+installation_directory=$(readlink -f "$1")
+
+# Create the directory
+mkdir -p "$installation_directory"
+cd "$installation_directory"
+
+PATH_CHANGES=\$PATH
+
+
+install_oss_cad_suite() {
+    # Get the latest OSS CAD Suite release information using the GitHub API
+    local latest_release_url=$(\
+        curl -s 'https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/latest' \
+        | jq -r '.assets[] | select(.name | test("oss-cad-suite-linux-x64-.*\\.tgz")).browser_download_url' \
+    )
+    if [ -z "$latest_release_url" ]; then
+        echo "Failed to fetch the latest release URL."
+        exit 1
+    fi
+
+    # Install OSS CAD Suite
+    echo Downloading from $latest_release_url
+    local latest_filename=$(basename "$latest_release_url")
+    rm -f $latest_filename
+    curl -JOL "$latest_release_url"
+    rm -rf oss-cad-suite
+    tar -xzf "$latest_filename" -C ./
+    rm -f "$latest_filename"
+    echo Installed OSS CAD Suite
+
+    PATH_CHANGES=$PATH_CHANGES:$installation_directory/oss-cad-suite/bin
+}
+
+
+install_synlig() {
+    # Get the latest Synlig release information using the GitHub API
+    local latest_release_url=$(\
+        curl -s 'https://api.github.com/repos/chipsalliance/synlig/releases/latest' \
+        | jq -r '.assets[] | select(.name | test("synlig-[0-9a-f]+-[0-9]{4}-[0-9]{2}-[0-9]{2}.tar.gz")).browser_download_url' \
+    )
+    if [ -z "$latest_release_url" ]; then
+        echo "Failed to fetch the latest Synlig release URL."
+        exit 1
+    fi
+    local latest_filename=$(basename "$latest_release_url")
+
+    # Install Synlig
+    echo Downloading from $latest_release_url
+    rm -f $latest_filename
+    curl -JOL "$latest_release_url"
+    rm -rf synlig
+    mkdir -p synlig
+    tar -xzf "$latest_filename" --strip-components=2 -C synlig
+    rm -f "$latest_filename"
+    echo Installed Synlig
+
+    PATH_CHANGES=$PATH_CHANGES:$installation_directory/synlig/bin
+}
+
+install_zachjs_sv2v() {
+    # Get the latest sv2v release information using the GitHub API
+    local latest_release_url=$(\
+        curl -s 'https://api.github.com/repos/zachjs/sv2v/releases/latest' \
+        | jq -r '.assets[] | select(.name == "sv2v-Linux.zip").browser_download_url' \
+    )
+    if [ -z "$latest_release_url" ]; then
+        echo "Failed to fetch the latest zachjs-sv2v release URL."
+        exit 1
+    fi
+    local latest_filename=$(basename "$latest_release_url")
+
+    # # Install zachjs-sv2v
+    echo Downloading from $latest_release_url
+    rm -f $latest_filename
+    curl -JOL "$latest_release_url"
+    rm -rf zachjs-sv2v
+    unzip "$latest_filename"
+    mv sv2v-Linux zachjs-sv2v
+    rm -f "$latest_filename"
+    echo Installed zachjs-sv2v
+
+    PATH_CHANGES=$PATH_CHANGES:$installation_directory/zachjs-sv2v
+}
+
+install_verible() {
+    # Get the latest verible release information using the GitHub API
+    local latest_release_url=$(\
+        curl -s 'https://api.github.com/repos/chipsalliance/verible/releases/latest' \
+        | jq -r '.assets[] | select(.name | contains("Ubuntu-20.04-focal-x86_64.tar.gz")).browser_download_url' \
+    )
+    if [ -z "$latest_release_url" ]; then
+        echo "Failed to fetch the latest release URL."
+        exit 1
+    fi
+    local latest_filename=$(basename "$latest_release_url")
+
+    # Install verible or perform other actions with the latest release URL
+    echo Downloading from $latest_release_url
+    rm -f $latest_filename
+    curl -JOL "$latest_release_url"
+    rm -rf verible
+    mkdir -p verible
+    tar -xzf "$latest_filename" --strip-components=1 -C verible
+    rm -f "$latest_filename"
+    echo Installed Verible
+
+    PATH_CHANGES=$PATH_CHANGES:$installation_directory/verible/bin
+}
+
+# Process command-line arguments
+while [[ "$#" -gt 1 ]]; do
+    case "$2" in
+        --oss-cad-suite)
+            INSTALL_OSS_CAD_SUITE=1
+            ;;
+        --synlig)
+            INSTALL_SYNLIG=1
+            ;;
+        --zachjs-sv2v)
+            INSTALL_ZACHJS_SV2V=1
+            ;;
+        --verible)
+            INSTALL_VERIBLE=1
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# Install the selected tools
+if [ -n "$INSTALL_SYNLIG" ]; then
+    install_synlig
+fi
+if [ -n "$INSTALL_OSS_CAD_SUITE" ]; then
+    install_oss_cad_suite
+fi
+if [ -n "$INSTALL_ZACHJS_SV2V" ]; then
+    install_zachjs_sv2v
+fi
+if [ -n "$INSTALL_VERIBLE" ]; then
+    install_verible
+fi
+
+
+echo 'Add the following to "~/.bashrc": PATH='$PATH_CHANGES

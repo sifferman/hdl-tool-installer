@@ -1,0 +1,31 @@
+name: Test
+on:
+  push:
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install
+        run: |
+          chmod +x install
+          ./install build --oss-cad-suite --synlig --zachjs-sv2v --verible
+          echo "$GITHUB_WORKSPACE/build/verible/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/build/zachjs-sv2v" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/build/oss-cad-suite/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/build/synlig/bin" >> $GITHUB_PATH
+      - name: Test Synlig
+        run: |
+          yosys -p 'plugin -i systemverilog; help read_systemverilog'
+      - name: Test OSS CAD Suite
+        run: |
+          iverilog -V
+          verilator --version
+      - name: Test zachjs-sv2v
+        run: |
+          sv2v --version
+      - name: Test Verible
+        run: |
+          verible-verilog-lint --version
