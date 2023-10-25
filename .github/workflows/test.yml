@@ -22,7 +22,9 @@ jobs:
       - name: Test OSS CAD Suite
         run: |
           iverilog -V
+          iverilog tb.sv -o tb.vvp && ./tb.vvp
           verilator --version
+          verilator --binary tb.sv && ./obj_dir/Vtb
       - name: Test zachjs-sv2v
         run: |
           sv2v --version
