@@ -102,7 +102,7 @@ install_verible() {
     # Get the latest verible release information using the GitHub API
     local latest_release_url=$(\
         curl -s 'https://api.github.com/repos/chipsalliance/verible/releases/latest' \
-        | jq -r '.assets[] | select(.name | contains("Ubuntu-20.04-focal-x86_64.tar.gz")).browser_download_url' \
+        | jq -r '.assets[] | select(.name | contains("linux-static-x86_64.tar.gz")).browser_download_url' \
     )
     if [ -z "$latest_release_url" ]; then
         echo "Failed to fetch the latest release URL."
