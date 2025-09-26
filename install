@@ -25,14 +25,7 @@ PATH_CHANGES=\$PATH
 
 install_oss_cad_suite() {
     # Get the latest OSS CAD Suite release information using the GitHub API
-    local latest_release_url=$(\
-        curl -s 'https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/latest' \
-        | jq -r '.assets[] | select(.name | test("oss-cad-suite-linux-x64-.*\\.tgz")).browser_download_url' \
-    )
-    if [ -z "$latest_release_url" ]; then
-        echo "Failed to fetch the latest release URL."
-        exit 1
-    fi
+    local latest_release_url=https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2025-09-16/oss-cad-suite-linux-x64-20250916.tgz
 
     # Install OSS CAD Suite
     echo Downloading from $latest_release_url
